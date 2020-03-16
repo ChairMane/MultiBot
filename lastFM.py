@@ -29,6 +29,49 @@ class Music:
         embed = discord.Embed(title='Similar artists', description=artists, color=0x6606BA)
         await self.bot.say(embed=embed)
 
+    @commands.command(pass_context=True, name='info-on')
+    async def get_artist_info(self, ctx, *query):
+        artist_name, limit = self.parse_query(query)
+        artist_object = network.get_artist(artist_name)
+        embed = discord.Embed(title='Info about {}'.format(artist_name), description=artist_object.get_bio_summary(language='en'), color=0x6606BA)
+        await self.bot.say(embed=embed)
+
+    @commands.command(pass_context=True, name='top-artists')
+    async def get_top_artists(self, ctx):
+        top_artists = network.get_top_artists(limit=20)
+        artists = ''
+        for i, artist in enumerate(reversed(top_artists)):
+            artists += '{}. {}\n'.format(i+1, artist.item)
+        embed = discord.Embed(title='Top 20 artists', description=artists, color=0x6606BA)
+        await self.bot.say(embed=embed)
+
+    @commands.command(pass_context=True, name='top-tracks')
+    async def get_top_tracks(self, ctx):
+        top_tracks = network.get_top_tracks(limit=20)
+        tracks = ''
+        for i, artist in enumerate(reversed(top_tracks)):
+            tracks += '{}. {}\n'.format(i+1, artist.item)
+        embed = discord.Embed(title='Top 20 tracks', description=tracks, color=0x6606BA)
+        await self.bot.say(embed=embed)
+
+    @commands.command(pass_context=True, name='top-albums-for')
+    async def get_artist_top_albums(self, ctx, *query):
+        artist_name, limit = self.parse_query(query)
+        artist_object = network.get_artist(artist_name)
+        top_albums = artist_object.get_top_albums(limit=limit)
+        self.barchart_for_albums(top_albums)
+        albums = ''
+        for i, artist in enumerate(reversed(top_albums)):
+            albums += '{}. {}\n'.format(i+1, artist.item)
+        embed = discord.Embed(title='Top albums for {}'.format(artist_name), description=albums, color=0x6606BA)
+        await self.bot.say(embed=embed)
+
+    def barchart_for_albums(self, albums_json):
+        print(type(albums_json))
+        for album in albums_json:
+            print(album.item)
+            # SOMEHOW MAKE BAR CHART WITH STATISTICS FROM JSON FILE
+
     def parse_query(self, query):
         artist = []
         limit = 5
