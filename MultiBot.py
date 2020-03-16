@@ -4,10 +4,10 @@ from discord.ext import commands
 
 config = json.load(open('config.json'))
 
-bot = commands.Bot(command_prefix=['--', '––'], description='Need a multitool?!')
+bot = commands.Bot(command_prefix=['>>'], description='Need a multitool?!')
 bot.remove_command('help')
 
-extensions = ['MultiCommands']
+extensions = ['MultiCommands', 'lastFM']
 
 @bot.event
 async def on_ready():
@@ -18,11 +18,11 @@ async def on_ready():
 
 if __name__ == '__main__':
 
-    """for extension in extensions:
+    for extension in extensions:
         try:
             bot.load_extension(extension)
         except Exception as error:
-            print('{} cannot be loaded. [{}]'.format(Exception, error))"""
+            print('{} cannot be loaded. [{}]'.format(Exception, error))
 
 
 bot.run(config['token'])
