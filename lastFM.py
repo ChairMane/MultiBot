@@ -68,8 +68,8 @@ class Music:
         for i, artist in enumerate(reversed(top_albums)):
             albums += '{}. {}\n'.format(i+1, artist.item)
         embed = discord.Embed(title='Top albums for {}'.format(artist_name), description=albums, color=0x6606BA)
-        await self.bot.say(embed=embed)
         await self.bot.send_file(ctx.message.channel, 'images/top_5.png')
+        await self.bot.say(embed=embed)
 
     def get_album_metadata(self, albums_json):
         x_labels = []
@@ -81,9 +81,14 @@ class Music:
             query = str(album.item).split(' - ')
             x_labels.append(query[1])
             json = self.get_json(query)
-            listeners.append(int(json['album']['listeners']))
-            playcounts.append(int(json['album']['playcount']))
-            track_count.append(len(json['album']['tracks']['track']))
+            if 'album' not in json:
+                listeners.append(0)
+                playcounts.append(0)
+                track_count.append(0)
+            else:
+                listeners.append(int(json['album']['listeners']))
+                playcounts.append(int(json['album']['playcount']))
+                track_count.append(len(json['album']['tracks']['track']))
         y_values.append(listeners)
         y_values.append(playcounts)
         y_values.append(track_count)
@@ -99,9 +104,9 @@ class Music:
         ax1.set_title('Listeners')
         ax2.set_title('Playcounts')
         ax3.set_title('Track Counts')
-        ax1.tick_params(labelrotation=8)
-        ax2.tick_params(labelrotation=8)
-        ax3.tick_params(labelrotation=8)
+        ax1.tick_params(labelrotation=10)
+        ax2.tick_params(labelrotation=10)
+        ax3.tick_params(labelrotation=10)
 
         fig.tight_layout()
         plt.savefig('images/top_5.png')
