@@ -62,12 +62,14 @@ class Music:
         artist_name, limit = self.parse_query(query)
         artist_object = network.get_artist(artist_name)
         top_albums = artist_object.get_top_albums(limit=limit)
-        self.get_album_metadata(top_albums)
+        X, Y = self.get_album_metadata(top_albums)
+        self.album_barchart(artist_name, X, Y)
         albums = ''
         for i, artist in enumerate(reversed(top_albums)):
             albums += '{}. {}\n'.format(i+1, artist.item)
         embed = discord.Embed(title='Top albums for {}'.format(artist_name), description=albums, color=0x6606BA)
         await self.bot.say(embed=embed)
+        await self.bot.send_file(ctx.message.channel, 'images/top_5.png')
 
     def get_album_metadata(self, albums_json):
         x_labels = []
@@ -79,45 +81,30 @@ class Music:
             query = str(album.item).split(' - ')
             x_labels.append(query[1])
             json = self.get_json(query)
-            listeners.append(json['album']['listeners'])
-            playcounts.append(json['album']['playcount'])
+            listeners.append(int(json['album']['listeners']))
+            playcounts.append(int(json['album']['playcount']))
             track_count.append(len(json['album']['tracks']['track']))
         y_values.append(listeners)
         y_values.append(playcounts)
         y_values.append(track_count)
-        print(x_labels)
-        print(y_values)
         return x_labels, y_values
 
-    def album_barchart(self, X, Y): # THIS FUNCTION IS NOT RIGHT
-        n_groups = 5
-        means_frank = (90, 55, 40, 65)
-        means_guido = (85, 62, 54, 20)
+    def album_barchart(self, artist, X, Y):
 
-        # create plot
-        fig, ax = plt.subplots(3, 1, 1)
-        index = np.arange(n_groups)
-        bar_width = 0.35
-        opacity = 0.8
+        fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=(10,10))
+        plt.setp((ax1, ax2, ax3), xticklabels=X)
+        rects1 = ax1.bar(X, Y[0])
+        rects2 = ax2.bar(X, Y[1])
+        rects3 = ax3.bar(X, Y[2])
+        ax1.set_title('Listeners')
+        ax2.set_title('Playcounts')
+        ax3.set_title('Track Counts')
+        ax1.tick_params(labelrotation=8)
+        ax2.tick_params(labelrotation=8)
+        ax3.tick_params(labelrotation=8)
 
-        rects1 = ax.bar(index, means_frank, bar_width,
-                         alpha=opacity,
-                         color='b',
-                         label='Frank')
-
-        rects2 = ax.bar(index + bar_width, means_guido, bar_width,
-                         alpha=opacity,
-                         color='g',
-                         label='Guido')
-
-        plt.xlabel('Person')
-        plt.ylabel('Scores')
-        plt.title('Scores by person')
-        plt.xticks(index + bar_width, ('A', 'B', 'C', 'D'))
-        plt.legend()
-
-        plt.tight_layout()
-        plt.show()
+        fig.tight_layout()
+        plt.savefig('images/top_5.png')
 
     def get_json(self, query):
         artist_name = query[0]
@@ -125,7 +112,6 @@ class Music:
         url = 'http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={}&artist={}&album={}&format=json'.format(API_KEY, artist_name, artist_album)
         album_metadata = requests.get(url)
         album_json = album_metadata.json()
-        print(url)
 
         return album_json
 
