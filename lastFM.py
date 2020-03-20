@@ -62,8 +62,8 @@ class Music:
         artist_name, limit = self.parse_query(query)
         artist_object = network.get_artist(artist_name)
         top_albums = artist_object.get_top_albums(limit=limit)
-        X, Y = self.get_album_metadata(top_albums)
-        self.album_barchart(artist_name, X, Y)
+        X, Y = self.get_last_metadata(top_albums, 'TA')
+        self.barchart(artist_name, X, Y, 'TA')
         albums = ''
         for i, artist in enumerate(reversed(top_albums)):
             albums += '{}. {}\n'.format(i+1, artist.item)
@@ -71,50 +71,83 @@ class Music:
         await self.bot.send_file(ctx.message.channel, 'images/top_5.png')
         await self.bot.say(embed=embed)
 
-    def get_album_metadata(self, albums_json):
+    @commands.command(pass_context=True, name='top-tracks-for')
+    async def get_artist_top_tracks(self, ctx, *query):
+        artist_name, limit = self.parse_query(query)
+        artist_object = network.get_artist(artist_name)
+        top_tracks = artist_object.get_top_tracks(limit=10)
+        X, Y = self.get_last_metadata(top_tracks, 'TT')
+        self.barchart(artist_name, X, Y, 'TT')
+        tracks = ''
+        for i, artist in enumerate(reversed(top_tracks)):
+            tracks += '{}. {}\n'.format(i+1, artist.item)
+        embed = discord.Embed(title='Top tracks for {}'.format(artist_name), description=tracks, color=0x6606BA)
+        await self.bot.send_file(ctx.message.channel, 'images/top_5.png')
+        await self.bot.say(embed=embed)
+
+    def get_last_metadata(self, _json, flag):
         x_labels = []
         y_values = []
         listeners = []
         playcounts = []
         track_count = []
-        for album in albums_json:
-            query = str(album.item).split(' - ')
+        duration = []
+        for item in _json:
+            query = str(item.item).split(' - ')
             x_labels.append(query[1])
-            json = self.get_json(query)
-            if 'album' not in json:
+            json = self.get_json(query, flag)
+            if 'album' not in json and 'track' not in json:
                 listeners.append(0)
                 playcounts.append(0)
                 track_count.append(0)
-            else:
+                duration.append(0)
+            elif 'track' not in json:
                 listeners.append(int(json['album']['listeners']))
                 playcounts.append(int(json['album']['playcount']))
                 track_count.append(len(json['album']['tracks']['track']))
-        y_values.append(listeners)
-        y_values.append(playcounts)
-        y_values.append(track_count)
+            elif 'album' not in json:
+                listeners.append(int(json['track']['listeners']))
+                playcounts.append(int(json['track']['playcount']))
+                duration.append(len(json['track']['duration']))
+        if flag == 'TA':
+            y_values.append(listeners)
+            y_values.append(playcounts)
+            y_values.append(track_count)
+        elif flag == 'TT':
+            y_values.append(listeners)
+            y_values.append(playcounts)
+            y_values.append(duration)
         return x_labels, y_values
 
-    def album_barchart(self, artist, X, Y):
+    def barchart(self, artist, X, Y, flag):
 
         fig, (ax1, ax2, ax3) = plt.subplots(3, figsize=(10,10))
         plt.setp((ax1, ax2, ax3), xticklabels=X)
         rects1 = ax1.bar(X, Y[0])
         rects2 = ax2.bar(X, Y[1])
         rects3 = ax3.bar(X, Y[2])
-        ax1.set_title('Listeners')
-        ax2.set_title('Playcounts')
-        ax3.set_title('Track Counts')
-        ax1.tick_params(labelrotation=10)
-        ax2.tick_params(labelrotation=10)
-        ax3.tick_params(labelrotation=10)
+        if flag == 'TA':
+            ax1.set_title('Listeners')
+            ax2.set_title('Playcounts')
+            ax3.set_title('Track Counts')
+        elif flag == 'TT':
+            ax1.set_title('Listeners')
+            ax2.set_title('Playcounts')
+            ax3.set_title('Track Duration')
+        ax1.tick_params(labelrotation=15)
+        ax2.tick_params(labelrotation=15)
+        ax3.tick_params(labelrotation=15)
 
         fig.tight_layout()
         plt.savefig('images/top_5.png')
 
-    def get_json(self, query):
+    def get_json(self, query, flag):
         artist_name = query[0]
-        artist_album = query[1]
-        url = 'http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={}&artist={}&album={}&format=json'.format(API_KEY, artist_name, artist_album)
+        artist_item = query[1]
+        if flag == 'TA':
+            url = 'http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={}&artist={}&album={}&format=json'.format(API_KEY, artist_name, artist_item)
+        elif flag == 'TT':
+            url = 'http://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key={}&artist={}&track={}&format=json'.format(API_KEY, artist_name, artist_item)
         album_metadata = requests.get(url)
         album_json = album_metadata.json()
 
