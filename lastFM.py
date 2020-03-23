@@ -84,6 +84,9 @@ class Music:
     async def get_top_albums_by_tag(self, ctx, *query):
         tag = ' '.join(query)
         albums = self.get_json(tag, 'TAG1')
+        if 'albums' not in albums:
+            await self.bot.say('{} is not a tag. Try again.'.format(tag))
+            return
         album_tags = ''
         for i, album in enumerate(albums['albums']['album']):
             album_tags += '{}. {} - {}\n'.format(i+1, album['name'], album['artist']['name'])
@@ -91,9 +94,12 @@ class Music:
         await self.bot.say(embed=embed)
 
     @commands.command(pass_context=True, name='top-artists-for-tag')
-    async def get_top_albums_by_tag(self, ctx, *query):
+    async def get_top_artists_by_tag(self, ctx, *query):
         tag = ' '.join(query)
         artists = self.get_json(tag, 'TAG2')
+        if 'topartists' not in artists:
+            await self.bot.say('{} is not a tag. Try again.'.format(tag))
+            return
         artist_tags = ''
         for i, artist in enumerate(artists['topartists']['artist']):
             artist_tags += '{}. {}\n'.format(i+1, artist['name'])
@@ -101,13 +107,42 @@ class Music:
         await self.bot.say(embed=embed)
 
     @commands.command(pass_context=True, name='top-tracks-for-tag')
-    async def get_top_albums_by_tag(self, ctx, *query):
+    async def get_top_tracks_by_tag(self, ctx, *query):
         tag = ' '.join(query)
         tracks = self.get_json(tag, 'TAG3')
+        if 'tracks' not in tracks:
+            await self.bot.say('{} is not a tag. Try again.'.format(tag))
+            return
         track_tags = ''
         for i, track in enumerate(tracks['tracks']['track']):
             track_tags += '{}. {}  -  {}\n'.format(i + 1, track['name'], track['artist']['name'])
         embed = discord.Embed(title='Top 10 artists for {}'.format(tracks['tracks']['@attr']['tag']), description=track_tags, color=0x6606BA)
+        await self.bot.say(embed=embed)
+
+    @commands.command(pass_context=True, name='top-artists-for-country')
+    async def get_top_artists_by_country(self, ctx, *query):
+        country = ' '.join(query)
+        artists = self.get_json(country, 'GEO1')
+        if 'topartists' not in artists:
+            await self.bot.say('{} is not a country. Try again.'.format(country))
+            return
+        artist_country = ''
+        for i, artist in enumerate(artists['topartists']['artist']):
+            artist_country += '{}. {}\n'.format(i+1, artist['name'])
+        embed = discord.Embed(title='Top 10 artists for {}'.format(artists['topartists']['@attr']['country']), description=artist_country, color=0x6606BA)
+        await self.bot.say(embed=embed)
+
+    @commands.command(pass_context=True, name='top-tracks-for-country')
+    async def get_top_tracks_by_country(self, ctx, *query):
+        country = ' '.join(query)
+        tracks = self.get_json(country, 'GEO2')
+        if 'tracks' not in tracks:
+            await self.bot.say('{} is not a country. Try again.'.format(country))
+            return
+        track_country = ''
+        for i, track in enumerate(tracks['tracks']['track']):
+            track_country += '{}. {} - {}\n'.format(i+1, track['name'], track['artist']['name'])
+        embed = discord.Embed(title='Top 10 tracks for {}'.format(tracks['tracks']['@attr']['country']), description=track_country, color=0x6606BA)
         await self.bot.say(embed=embed)
 
     @commands.command(pass_context=True, name='top-albums-for')
@@ -197,6 +232,8 @@ class Music:
     def get_json(self, query, flag):
         if 'TAG' in flag:
             tag = query
+        elif 'GEO' in flag:
+            country = query
         else:
             artist_name = query[0]
             artist_item = query[1]
@@ -211,6 +248,11 @@ class Music:
                 url = 'http://ws.audioscrobbler.com/2.0/?method=tag.gettopartists&tag={}&api_key={}&limit=10&format=json'.format(tag, API_KEY)
             elif '3' in flag:
                 url = 'http://ws.audioscrobbler.com/2.0/?method=tag.gettoptracks&tag={}&api_key={}&limit=10&format=json'.format(tag, API_KEY)
+        elif 'GEO' in flag:
+            if '1' in flag:
+                url = 'http://ws.audioscrobbler.com/2.0/?method=geo.gettopartists&country={}&api_key={}&limit=10&format=json'.format(country, API_KEY)
+            elif '2' in flag:
+                url = 'http://ws.audioscrobbler.com/2.0/?method=geo.gettoptracks&country={}&api_key={}&limit=10&format=json'.format(country, API_KEY)
         album_metadata = requests.get(url)
         album_json = album_metadata.json()
 
