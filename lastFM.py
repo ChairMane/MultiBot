@@ -16,6 +16,14 @@ pass_hash = pylast.md5(config['last_pass'])
 
 network = pylast.LastFMNetwork(api_key=API_KEY, api_secret=API_SECRET, username=last_user_name, password_hash=pass_hash)
 
+# TODO LIST
+# TAGS:
+# Get top tags
+# Get top albums/tracks/artists by tag
+# GEO:
+# Get top artists by country
+# Get top tracks by country
+
 class Music:
     def __init__(self, bot=None):
         self.bot = bot
@@ -48,13 +56,58 @@ class Music:
         embed = discord.Embed(title='Top 20 artists', description=artists, color=0x6606BA)
         await self.bot.say(embed=embed)
 
+
     @commands.command(pass_context=True, name='top-tracks')
     async def get_top_tracks(self, ctx):
+        """
+        Get the top 20 tracks on the Last FM API.
+        :param ctx:
+        :return: String with top 20 tracks on LastFm
+        """
         top_tracks = network.get_top_tracks(limit=20)
         tracks = ''
         for i, artist in enumerate(reversed(top_tracks)):
             tracks += '{}. {}\n'.format(i+1, artist.item)
         embed = discord.Embed(title='Top 20 tracks', description=tracks, color=0x6606BA)
+        await self.bot.say(embed=embed)
+
+    @commands.command(pass_context=True, name='top-tags')
+    async def get_top_tags(self, ctx, *query):
+        top_tags = network.get_top_tags(limit=10)
+        tags = ''
+        for i, tag in enumerate(reversed(top_tags)):
+            tags += '{}. {}\n'.format(i+1, tag.item)
+        embed = discord.Embed(title='Top 10 tags', description=tags, color=0x6606BA)
+        await self.bot.say(embed=embed)
+
+    @commands.command(pass_context=True, name='top-albums-for-tag')
+    async def get_top_albums_by_tag(self, ctx, *query):
+        tag = ' '.join(query)
+        albums = self.get_json(tag, 'TAG1')
+        album_tags = ''
+        for i, album in enumerate(albums['albums']['album']):
+            album_tags += '{}. {} - {}\n'.format(i+1, album['name'], album['artist']['name'])
+        embed = discord.Embed(title='Top 10 albums for {}'.format(albums['albums']['@attr']['tag']), description=album_tags, color=0x6606BA)
+        await self.bot.say(embed=embed)
+
+    @commands.command(pass_context=True, name='top-artists-for-tag')
+    async def get_top_albums_by_tag(self, ctx, *query):
+        tag = ' '.join(query)
+        artists = self.get_json(tag, 'TAG2')
+        artist_tags = ''
+        for i, artist in enumerate(artists['topartists']['artist']):
+            artist_tags += '{}. {}\n'.format(i+1, artist['name'])
+        embed = discord.Embed(title='Top 10 artists for {}'.format(artists['topartists']['@attr']['tag']), description=artist_tags, color=0x6606BA)
+        await self.bot.say(embed=embed)
+
+    @commands.command(pass_context=True, name='top-tracks-for-tag')
+    async def get_top_albums_by_tag(self, ctx, *query):
+        tag = ' '.join(query)
+        tracks = self.get_json(tag, 'TAG3')
+        track_tags = ''
+        for i, track in enumerate(tracks['tracks']['track']):
+            track_tags += '{}. {}  -  {}\n'.format(i + 1, track['name'], track['artist']['name'])
+        embed = discord.Embed(title='Top 10 artists for {}'.format(tracks['tracks']['@attr']['tag']), description=track_tags, color=0x6606BA)
         await self.bot.say(embed=embed)
 
     @commands.command(pass_context=True, name='top-albums-for')
@@ -142,12 +195,22 @@ class Music:
         plt.savefig('images/top_5.png')
 
     def get_json(self, query, flag):
-        artist_name = query[0]
-        artist_item = query[1]
+        if 'TAG' in flag:
+            tag = query
+        else:
+            artist_name = query[0]
+            artist_item = query[1]
         if flag == 'TA':
             url = 'http://ws.audioscrobbler.com/2.0/?method=album.getinfo&api_key={}&artist={}&album={}&format=json'.format(API_KEY, artist_name, artist_item)
         elif flag == 'TT':
             url = 'http://ws.audioscrobbler.com/2.0/?method=track.getInfo&api_key={}&artist={}&track={}&format=json'.format(API_KEY, artist_name, artist_item)
+        elif 'TAG' in flag:
+            if '1' in flag:
+                url = 'http://ws.audioscrobbler.com/2.0/?method=tag.gettopalbums&tag={}&api_key={}&limit=10&format=json'.format(tag, API_KEY)
+            elif '2' in flag:
+                url = 'http://ws.audioscrobbler.com/2.0/?method=tag.gettopartists&tag={}&api_key={}&limit=10&format=json'.format(tag, API_KEY)
+            elif '3' in flag:
+                url = 'http://ws.audioscrobbler.com/2.0/?method=tag.gettoptracks&tag={}&api_key={}&limit=10&format=json'.format(tag, API_KEY)
         album_metadata = requests.get(url)
         album_json = album_metadata.json()
 
