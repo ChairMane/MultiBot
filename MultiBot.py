@@ -7,7 +7,7 @@ config = json.load(open('config.json'))
 bot = commands.Bot(command_prefix=['>>'], description='Need a multitool?!')
 bot.remove_command('help')
 
-extensions = ['lastFM']
+extensions = ['cogs.lastFM']
 
 @bot.event
 async def on_ready():
