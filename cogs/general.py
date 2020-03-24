@@ -41,6 +41,10 @@ class General:
 
         await self.bot.say(embed=embed)
 
+    async def on_command_error(self, error, ctx):
+        if isinstance(error, commands.CommandNotFound):
+            await self.bot.send_message(ctx.message.channel, 'Command not found. Use `>>help` for more information.')
+
 
 def setup(bot):
     bot.add_cog(General(bot))
