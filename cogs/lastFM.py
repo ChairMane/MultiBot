@@ -4,7 +4,6 @@ from discord.ext import commands
 import discord
 import requests
 import matplotlib.pyplot as plt
-import numpy as np
 
 config = json.load(open('config.json'))
 
@@ -16,20 +15,25 @@ pass_hash = pylast.md5(config['last_pass'])
 
 network = pylast.LastFMNetwork(api_key=API_KEY, api_secret=API_SECRET, username=last_user_name, password_hash=pass_hash)
 
-# TODO LIST
-# TAGS:
-# Get top tags
-# Get top albums/tracks/artists by tag
-# GEO:
-# Get top artists by country
-# Get top tracks by country
-
 class Music:
     def __init__(self, bot=None):
         self.bot = bot
 
     @commands.command(pass_context=True, name='similar-to')
-    async def get_similar_artists(self, ctx, *query):   # Add async when finished and ctx
+    async def get_similar_artists(self, ctx, *query):
+        """
+        **DESCRIPTION**
+        Return similar artists to the query within the given limit. Default limit is 5.
+
+        **HOW TO USE**
+        `artist_name` - string
+        `limit` - integer
+        ```>>similar-to (<artist_name>|<limit>)```
+
+        **EXAMPLE:**
+        ```>>similar-to metallica```
+        ```>>similar-to metallica 10```
+        """
         artist_name, limit = self.parse_query(query)
         artist_object = network.get_artist(artist_name)
         similar_artists = artist_object.get_similar(limit=limit)
@@ -42,6 +46,17 @@ class Music:
 
     @commands.command(pass_context=True, name='info-on')
     async def get_artist_info(self, ctx, *query):
+        """
+        **DESCRIPTION**
+        Return bio summaries retrieved from the Last.fm website on artists given.
+
+        **HOW TO USE**
+        `artist_name` - string
+        ```>>info-on <artist_name>```
+
+        **EXAMPLE:**
+        ```>>info-on doja cat```
+        """
         artist_name, limit = self.parse_query(query)
         artist_object = network.get_artist(artist_name)
         embed = discord.Embed(title='Info about {}'.format(artist_name), description=artist_object.get_bio_summary(language='en'), color=0x6606BA)
@@ -49,6 +64,13 @@ class Music:
 
     @commands.command(pass_context=True, name='top-artists')
     async def get_top_artists(self, ctx):
+        """
+        **DESCRIPTION**
+        Return top 20 artists on Last.fm. Default limit is 20.
+
+        **HOW TO USE**
+        ```>>top-artists```
+        """
         top_artists = network.get_top_artists(limit=20)
         artists = ''
         for i, artist in enumerate(reversed(top_artists)):
@@ -60,9 +82,11 @@ class Music:
     @commands.command(pass_context=True, name='top-tracks')
     async def get_top_tracks(self, ctx):
         """
-        Get the top 20 tracks on the Last FM API.
-        :param ctx:
-        :return: String with top 20 tracks on LastFm
+        **DESCRIPTION**
+        Return top 20 tracks on the Last.fm website. Default limit is 20.
+
+        **HOW TO USE**
+        ```>>top-tracks```
         """
         top_tracks = network.get_top_tracks(limit=20)
         tracks = ''
@@ -72,16 +96,35 @@ class Music:
         await self.bot.say(embed=embed)
 
     @commands.command(pass_context=True, name='top-tags')
-    async def get_top_tags(self, ctx, *query):
-        top_tags = network.get_top_tags(limit=10)
+    async def get_top_tags(self, ctx):
+        """
+        **DESCRIPTION**
+        Return top tags from the Last.fm website. Default limit is 20.
+
+        **HOW TO USE**
+        ```>>top-tags```
+        """
+        top_tags = network.get_top_tags(limit=20)
         tags = ''
         for i, tag in enumerate(reversed(top_tags)):
             tags += '{}. {}\n'.format(i+1, tag.item)
-        embed = discord.Embed(title='Top 10 tags', description=tags, color=0x6606BA)
+        embed = discord.Embed(title='Top 20 tags', description=tags, color=0x6606BA)
         await self.bot.say(embed=embed)
 
     @commands.command(pass_context=True, name='top-albums-for-tag')
     async def get_top_albums_by_tag(self, ctx, *query):
+        """
+        **DESCRIPTION**
+        Returns top albums for a given tag. Default limit is 10.
+
+        **HOW TO USE**
+        `tag` - string
+        ```>>top-albums-for-tag <tag>```
+
+        **EXAMPLE:**
+        ```>>top-albums-for-tag metal```
+        ```>>top-albums-for-tag hip hop```
+        """
         tag = ' '.join(query)
         albums = self.get_json(tag, 'TAG1')
         if 'albums' not in albums:
@@ -95,6 +138,18 @@ class Music:
 
     @commands.command(pass_context=True, name='top-artists-for-tag')
     async def get_top_artists_by_tag(self, ctx, *query):
+        """
+        **DESCRIPTION**
+        Returns top artists for a given tag. Default limit is 10.
+
+        **HOW TO USE**
+        `tag` - string
+        ```>>top-artists-for-tag <tag>```
+
+        **EXAMPLE:**
+        ```>>top-artists-for-tag disco```
+        ```>>top-artists-for-tag indie```
+        """
         tag = ' '.join(query)
         artists = self.get_json(tag, 'TAG2')
         if 'topartists' not in artists:
@@ -108,6 +163,18 @@ class Music:
 
     @commands.command(pass_context=True, name='top-tracks-for-tag')
     async def get_top_tracks_by_tag(self, ctx, *query):
+        """
+        **DESCRIPTION**
+        Returns top tracks for a given tag. Default limit is 10.
+
+        **HOW TO USE**
+        `tag` - string
+        ```>>top-tracks-for-tag <tag>```
+
+        **EXAMPLE:**
+        ```>>top-tracks-for-tag experimental```
+        ```>>top-tracks-for-tag japanese anime```
+        """
         tag = ' '.join(query)
         tracks = self.get_json(tag, 'TAG3')
         if 'tracks' not in tracks:
@@ -121,6 +188,18 @@ class Music:
 
     @commands.command(pass_context=True, name='top-artists-for-country')
     async def get_top_artists_by_country(self, ctx, *query):
+        """
+        **DESCRIPTION**
+        Returns top artists for a given country. Default limit is 10.
+
+        **HOW TO USE**
+        `country` - string
+        ```>>top-artists-for-country <country>```
+
+        **EXAMPLE:**
+        ```>>top-artists-for-country ireland```
+        ```>>top-artists-for-country belarus```
+        """
         country = ' '.join(query)
         artists = self.get_json(country, 'GEO1')
         if 'topartists' not in artists:
@@ -134,6 +213,18 @@ class Music:
 
     @commands.command(pass_context=True, name='top-tracks-for-country')
     async def get_top_tracks_by_country(self, ctx, *query):
+        """
+        **DESCRIPTION**
+        Returns top tracks for a given country. Default limit is 10.
+
+        **HOW TO USE**
+        `country` - string
+        ```>>top-tracks-for-country <country>```
+
+        **EXAMPLE:**
+        ```>>top-tracks-for-country united states```
+        ```>>top-tracks-for-country japan```
+        """
         country = ' '.join(query)
         tracks = self.get_json(country, 'GEO2')
         if 'tracks' not in tracks:
@@ -147,9 +238,21 @@ class Music:
 
     @commands.command(pass_context=True, name='top-albums-for')
     async def get_artist_top_albums(self, ctx, *query):
+        """
+        **DESCRIPTION**
+        Returns a chart on metadata for the top albums for given artists. Default limit is 5.
+
+        **HOW TO USE*
+        `artist_name` - string
+        ```>>top-albums-for <artist_name>```
+
+        **EXAMPLE:**
+        ```>>top-albums-for justin bieber```
+        ```>>top-albums-for wisin```
+        """
         artist_name, limit = self.parse_query(query)
         artist_object = network.get_artist(artist_name)
-        top_albums = artist_object.get_top_albums(limit=limit)
+        top_albums = artist_object.get_top_albums(limit=5)
         X, Y = self.get_last_metadata(top_albums, 'TA')
         self.barchart(artist_name, X, Y, 'TA')
         albums = ''
@@ -161,6 +264,18 @@ class Music:
 
     @commands.command(pass_context=True, name='top-tracks-for')
     async def get_artist_top_tracks(self, ctx, *query):
+        """
+        **DESCRIPTION**
+        Returns a chart on metadata for the top tracks for given artists. Default limit is 10.
+
+        **HOW TO USE**
+        `artist_name` - string
+        ```>>top-tracks-for <artist_name>```
+
+        **EXAMPLE:**
+        ```>>top-tracks-for drake```
+        ```>>top-tracks-for dolly parton```
+        """
         artist_name, limit = self.parse_query(query)
         artist_object = network.get_artist(artist_name)
         top_tracks = artist_object.get_top_tracks(limit=10)
